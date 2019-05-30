@@ -10,6 +10,7 @@ import { getFeed, handleLoadWants } from '../../services/api/feed';
 import { getUser } from '../../services/api/admin';
 import { updateFeed, addWants, setNextPageUrl } from '../../actions/feed';
 import { setUser } from '../../actions/admin';
+import { registerForPushNotificationsAsync } from '../../services/api/notifications';
 
 export class HomeScreen extends Component {
     constructor(props) {
@@ -34,6 +35,7 @@ export class HomeScreen extends Component {
                     ...this.state,
                     loading: false
                 });
+                registerForPushNotificationsAsync();
             });
         });    
     } 

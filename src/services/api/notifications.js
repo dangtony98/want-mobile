@@ -22,28 +22,28 @@ const registerForPushNotificationsAsync = async () => {
     if (finalStatus !== 'granted') {
       return;
     }
-  
     // Get the token that uniquely identifies this device
-    let token = await Notifications.getExpoPushTokenAsync();
-  
+    let expoToken = await Notifications.getExpoPushTokenAsync();
+    console.log('the token: ' + expoToken);
     // POST the token to your backend server from where you can retrieve it to send push notifications.
-    // await AsyncStorage.getItem('token').then((token) => {
-    //     axios.post(`${WANT_URL}/api/category`, 
-    //     { 
-    //         headers: { 
-    //             Accept: 'application/json', 
-    //             Authorization: `Bearer ${token}` 
-    //         }
-    //     })
-    //     .then((response) => {
-    //         // POST DEVICE TOKEN SUCCESSFUL
-
-    //     })
-    //     .catch((error) => {
-    //         // POST DEVICE TOKEN NOT SUCCESSFUL
-    //         console.log('Error: ' + error);
-    //     });
-    // });
+    await AsyncStorage.getItem('token').then((token) => { 
+      axios.post(`${WANT_URL}/api/device-token`, {
+        token: expoToken
+      },
+      { 
+          headers: { 
+              Accept: 'application/json', 
+              Authorization: `Bearer ${token}` 
+          }
+      })
+      .then((response) => {
+        // POST DEVICE TOKEN SUCCESSFUL
+      })
+      .catch((error) => {
+          // POST DEVICE TOKEN NOT SUCCESSFUL
+          console.log('Error: ' + error);
+      });
+    });
 }
 
 export { registerForPushNotificationsAsync };
