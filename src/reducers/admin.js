@@ -26,7 +26,7 @@ export default (state = admin, action) => {
                 first_name: action.payload.first_name,
                 last_name: action.payload.last_name,
                 email: action.payload.email,
-                photo: `${IMAGE_URL}/${action.payload.avatar}`,
+                photo: action.payload.avatar,
                 tag_line: action.payload.tag_line,
                 description: action.payload.description
             }

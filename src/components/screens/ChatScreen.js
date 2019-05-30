@@ -1,18 +1,21 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import Pusher from 'pusher-js/react-native';
+import { View, AsyncStorage, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/Feather';
 import Header from '../generic/Header';
-import Input from '../generic/Input';
 import ChatList from '../chat/ChatList';
-import { getMessages, seenMessages } from '../../services/api/inbox';
+import SendInput from '../generic/SendInput';
+import { getMessages, sendMessage, seenMessages } from '../../services/api/inbox';
+import { WANT_URL } from '../../services/variables/variables';
 
 export class ChatScreen extends Component {
     constructor(props) {
         super(props);
         
         this.state = {
+            loading: true,
             pusher: null,
             convo_id: null,
             messages: [],
@@ -21,34 +24,77 @@ export class ChatScreen extends Component {
             chatInput: ''
         }
     }
-    componentDidMount() {
-        const { convo_id } = this.props.navigation.state.params;
+    
+    async componentDidMount() {
+        const { convo_id, receiver } = this.props.navigation.state.params;
         const { admin } = this.props;
+        Pusher.logToConsole = true;
+
+        this.setState({ ...this.state, receiver });
+
+        await AsyncStorage.getItem('token').then((token) => { 
+            const pusher = new Pusher('78565ef6078f239cd16c', {
+                cluster: 'us2',
+                encrypted: true,
+                authEndpoint: `${WANT_URL}/broadcasting/auth`,
+                auth: {
+                    headers: { 
+                        Accept: 'application/json', 
+                        Authorization: `Bearer ${token}` 
+                    }
+                }      
+            });
+
+            const channel = pusher.subscribe(`private-chat.${convo_id}`);
+            channel.bind("App\\Events\\MessageSentEvent", (data) => {
+                this.setState({
+                    ...this.state,
+                    messages: [data.message, ...this.state.messages]
+                });
+            });
+    
+            channel.bind('pusher:subscription_error', function(status) {
+                console.log('pusher:subscription_error details: ');
+                console.log(status);
+            });
+        });
 
         getMessages(convo_id, (response) => {
             const data = response.data;
             const adminIsSender = admin.id == data.wanter.id;
-            console.log('getMessages response: ');
-            console.log(response.data);
 
             this.setState({
                 ...this.state,
+                loading: false,
                 convo_id: data.id,
-                messages: data.messages,
+                messages: data.messages.reverse(),
                 sender: adminIsSender ? data.wanter : data.fulfiller,
-                receiver: adminIsSender ? data.fulfiller : data.wanter
+                // receiver: adminIsSender ? data.fulfiller : data.wanter
             });
-        })
+            seenMessages(convo_id);
 
+        });
+    }
+
+    onSendMessage = () => {
+        const { convo_id, chatInput } = this.state;
+        sendMessage({
+            convo_id,
+            message: chatInput.trim()
+        }, () => {
+            this.setState({
+                ...this.state,
+                chatInput: ''
+            });
+        });
     }
 
     render() {
         const { 
             headerStyle, 
-            contentStyle,
-            inputContainerStyle
+            contentStyle
         } = styles;
-        const { sender, receiver, messages, chatInput } = this.state;
+        const { loading, convo_id, sender, receiver, messages, chatInput } = this.state;
         return (
             <View style={{ flex: 1 }}>
                 {receiver && (
@@ -70,21 +116,42 @@ export class ChatScreen extends Component {
                             </View>
                         </Header>
                         <View style={contentStyle}>
-                            <ChatList
-                                sender={sender}
-                                receiver={receiver}
-                                messages={messages}
-                            />
+                            {loading ? (
+                                <View 
+                                    style={{ 
+                                        flex: 1, 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center' 
+                                    }}
+                                >
+                                    <ActivityIndicator 
+                                        size="small"
+                                        color="rgb(88, 42, 114)"
+                                    />
+                                </View>
+                            ) : (
+                                <ChatList
+                                    sender={sender}
+                                    receiver={receiver}
+                                    messages={messages}
+                                />
+                            )}
                         </View>
-                        <View style={inputContainerStyle}>
-                            <Input 
+                        <KeyboardAvoidingView 
+                            behavior="padding" 
+                            keyboardVerticalOffset={0}
+                            enabled
+                        >
+                            <SendInput 
                                 value={chatInput}
-                                placeholder='Send "hello"'
-                                // onFocus={() => this.handleInputFocus(true)}
-                                // onBlur={() => this.handleInputFocus(false)}
-                                // onChangeText={(text) => this.setState({ ...this.state, searchTerm: text})}
+                                placeholder='Write a message'
+                                buttonTitle="Send"
+                                onChangeText={(text) => {
+                                    this.setState({ ...this.state, chatInput: text });
+                                }}
+                                onEnter={this.onSendMessage}
                             />
-                        </View>
+                        </KeyboardAvoidingView>
                     </View>
                 )}
             </View>
@@ -97,20 +164,13 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 44,
-        marginLeft: -15
+        paddingTop: 59,
+        marginLeft: -15,
     },
     contentStyle: {
         flex: 1,
         paddingLeft: 20,
         paddingRight: 20
-    },
-    inputContainerStyle: {
-        flex: 0.15,
-        paddingTop: 20,
-        paddingLeft: 10,
-        paddingRight: 10,
-        backgroundColor: 'rgb(237,240,241)'
     }
 });
 

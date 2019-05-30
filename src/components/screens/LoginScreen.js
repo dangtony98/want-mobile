@@ -15,24 +15,24 @@ export class LoginScreen extends Component {
             inputFocus: false,
             email: '',
             password: '',
-            isLoggedIn: null
+            isLoggedIn: false
         }
     }
 
     async componentDidMount() {
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
-        await AsyncStorage.getItem('token').then((token) => {
-            if (token) {
-                this.setState({
-                    ...this.state,
-                    isLoggedIn: true
-                }, () => {
-                    this.props.navigation.navigate('Main');
-                })
-            } else {
-                this.setState({ ...this.state, isLoggedIn: false });
-            }
-        });
+        // await AsyncStorage.getItem('token').then((token) => {
+        //     if (token) {
+        //         this.setState({
+        //             ...this.state,
+        //             isLoggedIn: true
+        //         }, () => {
+        //             this.props.navigation.navigate('Main');
+        //         })
+        //     } else {
+        //         this.setState({ ...this.state, isLoggedIn: false });
+        //     }
+        // });
     }
 
     onButtonPressed = () => {
@@ -62,6 +62,7 @@ export class LoginScreen extends Component {
                         <View style={[containerStyle, inputFocus && { justifyContent: 'flex-start' }]}>
                             <View style={boxStyle}>
                                 <Input 
+                                    type="solid"
                                     value={email}
                                     placeholder="Username"
                                     onFocus={() => this.handleInputFocus(true)}
@@ -69,6 +70,7 @@ export class LoginScreen extends Component {
                                     onChangeText={(text) => this.setState({ ...this.state, email: text })}
                                 />
                                 <Input 
+                                    type="solid"
                                     value={password}
                                     placeholder="Password"
                                     onFocus={() => this.handleInputFocus(true)}
@@ -76,9 +78,9 @@ export class LoginScreen extends Component {
                                     onChangeText={(text) => this.setState({ ...this.state, password: text })}
                                     secureTextEntry
                                 />
-                                <Button 
+                                <Button
+                                    type="solid" 
                                     title="Login"
-                                    type="solid"
                                     onPress={() => this.onButtonPressed()}
                                 />
                             </View>
@@ -100,11 +102,11 @@ const styles = StyleSheet.create({
         paddingTop: 75,
         paddingLeft: 25,
         paddingRight: 25,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        height: 180,
     },
     boxStyle: {
-        height: 200,
-        justifyContent: 'space-around'
+        height: 180,
     }
 });
 

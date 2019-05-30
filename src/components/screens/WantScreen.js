@@ -1,15 +1,77 @@
 import React, { Component } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { connect } from 'react-redux';
+import { View, Image, Text, TouchableOpacity, ScrollView, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/Feather';
+import moment from 'moment';
+import numeral from 'numeral';
 import Header from '../generic/Header';
+import SendInput from '../generic/SendInput';
+import WantComments from '../want/WantComments';
+import { getWant, commentWant } from '../../services/api/want';
+import { IMAGE_URL } from '../../services/variables/variables';
 
-export default class WantScreen extends Component {
+
+export class WantScreen extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            want: null,
+            commentInput: '',
+            comments: []
+        }
+    }
+    componentDidMount() {
+        const { id } = this.props.navigation.state.params;
+
+        getWant(id, (response) => {
+            this.setState({
+                ...this.state,
+                want: response.data.want,
+                comments: response.data.want.comments
+            });
+        });
+    }
+
+    onPostComment = () => {
+        const { commentInput, want} = this.state;
+        const { admin } = this.props;
+        commentWant(commentInput, want.id, () => {
+            this.setState((prevState) => ({
+                ...this.state,
+                commentInput: '',
+                comments: [...prevState.comments, {
+                    user: {
+                        id: admin.id,
+                        avatar: admin.photo
+                    },
+                    body: commentInput.trim(),
+                    created_at: new Date(),
+                    replies: []
+                }]
+            }));
+            this.refs.scrollView.scrollTo(0);
+        });
+    }
+
     render() {
-        const { headerStyle, containerStyle } = styles;
+        const { 
+            headerStyle, 
+            containerStyle,
+            bottomContainerStyle,
+            rowContainerStyle,
+            verticalContainerStyle,
+            imageStyle,
+            titleStyle,
+            textStyle 
+        } = styles;
+        const { want, comments, commentInput } = this.state;
+        console.log('tet');
+        console.log(this.props.admin);
         return (
             <View style={{ flex: 1 }}>
-                <Header title={`${this.props.navigation.state.params.title}`}>
+                <Header title="">
                     <View style={headerStyle}>
                         <Button 
                             icon={
@@ -22,12 +84,97 @@ export default class WantScreen extends Component {
                             type='clear'
                             onPress={() => this.props.navigation.goBack()}
                         />
-                        <View />
+                        <Button 
+                            icon={
+                                <Icon 
+                                    name="message-square" 
+                                    size={30} 
+                                    color="rgb(189,195,199)" 
+                                />
+                            }
+                            type='clear'
+                            onPress={() => this.onCreateConvo()}
+                        />
                     </View>
                 </Header>
-                <View style={containerStyle}>
-
-                </View>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    ref="scrollView"
+                >
+                    <View style={containerStyle}>
+                        {want && (
+                            <View style={{ flex: 1 }}>
+                                <View 
+                                    style={[rowContainerStyle, {
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start'
+                                    }]}
+                                >
+                                    <TouchableOpacity 
+                                        onPress={() => this.props.navigation.navigate('Profile', { user: want.user })}
+                                    >
+                                        <View style={rowContainerStyle}>
+                                            <Image 
+                                                style={imageStyle}
+                                                source={{ uri: `${IMAGE_URL}/${want.user.avatar}`}}
+                                            />
+                                            <View 
+                                                style={[verticalContainerStyle, { 
+                                                    marginLeft: 15 
+                                                }]}
+                                            >
+                                                <Text 
+                                                    style={[textStyle, { 
+                                                        fontFamily: 'roboto-medium', 
+                                                        color: 'rgb(0, 0, 0)' 
+                                                    }]}
+                                                >
+                                                    {want.user.first_name}
+                                                </Text>
+                                                <Text style={textStyle}>{`${moment(want.created_at).fromNow(true)} ago`}</Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <Text 
+                                        style={[textStyle, {
+                                            fontFamily: 'roboto-bold',
+                                            color: 'rgb(46,204,113)'
+                                        }]}
+                                    >
+                                        {want.cost == 0 ? 'FREE' : numeral(want.cost / 100).format('$0,0.00')}
+                                    </Text>
+                                </View>
+                                <View style={bottomContainerStyle}>
+                                    <Text style={titleStyle}>
+                                        {want.title}
+                                    </Text>
+                                    <Text style={[textStyle, { marginTop: 10 }]}>
+                                        {want.description}
+                                    </Text>
+                                </View>
+                                <WantComments 
+                                    comments={comments}
+                                    navigation={this.props.navigation}
+                                />
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
+                <KeyboardAvoidingView
+                    behavior="padding" 
+                    keyboardVerticalOffset={0}
+                    enabled
+                >
+                    <SendInput
+                        value={commentInput} 
+                        placeholder="Write a comment"
+                        buttonTitle="Post"
+                        onChangeText={(text) => {
+                            this.setState({... this.state, commentInput: text })
+                        }}
+                        onEnter={this.onPostComment}
+                    />
+                </KeyboardAvoidingView>
             </View>
         );
     }
@@ -38,10 +185,51 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 44,
+        paddingTop: 59,
         marginLeft: -15
     },
     containerStyle: {
-        
+        flex: 1,
+        paddingLeft: 20,
+        paddingRight: 20
+    },
+    bottomContainerStyle: {
+        paddingTop: 10,
+        paddingBottom: 20,
+        borderBottomWidth: 0.25,
+        borderBottomColor: 'rgb(189,195,199)'
+    },
+    rowContainerStyle: {
+        flexDirection: 'row'
+    },
+    verticalContainerStyle: {
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+    },
+    imageStyle: {
+        height: 42, 
+        width: 42, 
+        borderRadius: 21,
+        shadowColor: 'rgb(0, 0, 0)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4
+    },
+    titleStyle: {
+        fontFamily: 'roboto-bold',
+        fontSize: 20,
+        lineHeight: 25
+    },
+    textStyle: {
+        fontFamily: 'roboto-light',
+        fontSize: 15,
+        color: 'rgb(90, 95, 96)',
+        lineHeight: 20
     }
 });
+
+const mapStateToProps = ({ admin }) => ({
+    admin
+});
+
+export default connect(mapStateToProps)(WantScreen);

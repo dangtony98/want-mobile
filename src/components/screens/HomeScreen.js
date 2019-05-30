@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, Text, TouchableOpacity, FlatList, Keyboard, UIManager, LayoutAnimation, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Keyboard, UIManager, LayoutAnimation, ActivityIndicator, StyleSheet } from 'react-native';
 import { InstantSearch } from 'react-instantsearch-native';
 import Input from '../generic/Input';
 import ConnectedSearch from '../filter/ConnectedSearch';
@@ -15,26 +15,30 @@ export class HomeScreen extends Component {
     constructor(props) {
         super(props);
 
-        this.handleLoadWants = this.handleLoadWants.bind(this);
-        this.handleInputFocus = this.handleInputFocus.bind(this);
-
         this.state = {
+            loading: true,
             searchTerm: '',
+            isRefreshing: false,
             inputFocus: false
         }
     }
 
-    async componentDidMount() {
+    componentDidMount() {
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
         getUser((response) => {
             this.props.setUser(response.data.user);
             getFeed((response) => {
                 this.props.updateFeed(response.data);
+                console.log(response.data);
+                this.setState({
+                    ...this.state,
+                    loading: false
+                });
             });
         });    
     } 
 
-    async handleLoadWants() {
+    handleLoadWants = async () => {
         const { next_page_url } = this.props;
 
         if (next_page_url != null) {
@@ -49,6 +53,18 @@ export class HomeScreen extends Component {
         }
     }
 
+    onRefresh = () => {
+        this.setState({
+            ...this.state,
+            isRefreshing: true
+        }, () => {
+            getFeed((response) => {
+                this.props.updateFeed(response.data);
+                this.setState({ ...this.state, isRefreshing: false });
+            });
+        });
+    }
+
     handleInputFocus = (focus) => {
         if (!focus) Keyboard.dismiss();
 
@@ -61,12 +77,13 @@ export class HomeScreen extends Component {
 
     render() {
         const { screenStyle, headerStyle, contentStyle, cancelButtonStyle, textStyle } = styles;
-        const { searchTerm, inputFocus } = this.state;
+        const { loading, searchTerm, isRefreshing, inputFocus } = this.state;
         const { wants } = this.props;
         return (
             <View style={screenStyle}>
                 <View style={headerStyle}>
-                    <Input 
+                    <Input
+                        type="solid" 
                         value={searchTerm}
                         placeholder='Try "homework"'
                         onFocus={() => this.handleInputFocus(true)}
@@ -84,20 +101,37 @@ export class HomeScreen extends Component {
                 </View>
                 {searchTerm == '' && wants ? (
                     <View style={contentStyle}>
-                        <FlatList 
-                            data={wants}
-                            keyExtractor={(want) => String(want.id)}
-                            showsVerticalScrollIndicator={false}
-                            onEndReached={() => this.handleLoadWants()}
-                            onEndReachedThreshold={0.1}
-                            renderItem={({ item }) => (
-                                <Want 
-                                    {...item} 
-                                    navigation={this.props.navigation}
+                        { loading ? (
+                            <View 
+                                style={{ 
+                                    flex: 1, 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center' 
+                                }}
+                            >
+                                <ActivityIndicator 
+                                    size="small"
+                                    color="rgb(88, 42, 114)"
                                 />
-                            )}
-                            style={{ flex: 1 }}
-                        />
+                            </View>
+                        ) : (
+                            <FlatList 
+                                data={wants}
+                                keyExtractor={(want) => String(want.id)}
+                                showsVerticalScrollIndicator={false}
+                                onEndReached={() => this.handleLoadWants()}
+                                onEndReachedThreshold={0.1}
+                                refreshing={isRefreshing}
+                                onRefresh={() => this.onRefresh()}
+                                renderItem={({ item }) => (
+                                    <Want 
+                                        {...item} 
+                                        navigation={this.props.navigation}
+                                    />
+                                )}
+                                style={{ flex: 1 }}
+                            />
+                        )}
                     </View>
                 ) : (
                     <View style={contentStyle}>

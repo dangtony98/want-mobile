@@ -88,7 +88,7 @@ export default class App extends Component {
               screen: ChatScreen,
               navigationOptions: {
                 header: null,
-                tabBarVisible: false // DOESN'T SEEM TO WORK
+                tabBarVisible: false
               }
             }
           }, {
@@ -105,7 +105,7 @@ export default class App extends Component {
               }
               return {
                 tabBarIcon: ({tintColor}) => (
-                  <Icon name="send" size={30} color={tintColor} />
+                  <Icon name="inbox" size={30} color={tintColor} />
                 ),
                 tabBarVisible
               }

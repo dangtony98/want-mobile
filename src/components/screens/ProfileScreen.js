@@ -1,16 +1,57 @@
 import React, { Component } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { connect } from 'react-redux';
+import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/Feather';
 import Header from '../generic/Header';
+import ProfileSummary from '../profile/ProfileSummary';
+import ProfileReviews from '../profile/ProfileReviews';
+import { getProfile } from '../../services/api/profile';
+import { createConvo } from '../../services/api/inbox';
 
-export default class ProfileScreen extends Component {
+export class ProfileScreen extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            loading: true,
+            data: null
+        }
+    }
+
+    componentDidMount() {
+        const { id } = this.props.navigation.state.params.user;
+        
+        getProfile(id, (response) => {
+            this.setState({
+                ...this.state,
+                loading: false,
+                data: response.data
+            });
+        });
+    }
+
+    onCreateConvo = () => {
+        const { id } = this.props.navigation.state.params.user;
+        createConvo({
+            wanter_id: this.props.id,
+            fulfiller_id: id,
+            want_id: null
+        }, () => {
+            this.props.navigation.navigate('Inbox');
+        });
+    }
+
     render() {
-        const { headerStyle, containerStyle } = styles;
-        console.log(this.props);
+        const { 
+            headerStyle,
+            headingContainer,
+            headingText
+        } = styles;
+        const { loading, data } = this.state;
         return (
             <View style={{ flex: 1 }}>
-                <Header title={`${this.props.navigation.state.params.user.first_name}`}>
+                <Header title="">
                     <View style={headerStyle}>
                         <Button 
                             icon={
@@ -23,12 +64,63 @@ export default class ProfileScreen extends Component {
                             type='clear'
                             onPress={() => this.props.navigation.goBack()}
                         />
-                        <View />
+                        <View style={{ flexDirection: 'row' }}>
+                            <Button 
+                                icon={
+                                    <Icon 
+                                        name="message-square" 
+                                        size={30} 
+                                        color="rgb(189,195,199)" 
+                                    />
+                                }
+                                type='clear'
+                                onPress={() => this.onCreateConvo()}
+                            />
+                            <Button 
+                                icon={
+                                    <Icon 
+                                        name="plus" 
+                                        size={30} 
+                                        color="rgb(189,195,199)" 
+                                    />
+                                }
+                                type='clear'
+                                onPress={() => this.props.navigation.goBack()}
+                                style={{ marginLeft: 10 }}
+                            />
+                        </View>
                     </View>
                 </Header>
-                <View style={containerStyle}>
-
-                </View>
+                {(loading && data == null) ? (
+                    <View 
+                        style={{ 
+                            flex: 1, 
+                            alignItems: 'center', 
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <ActivityIndicator 
+                            size="small"
+                            color="rgb(88, 42, 114)"
+                        />
+                    </View>
+                ) : (
+                    <ScrollView 
+                        style={{ flex: 1, paddingLeft: 20, paddingRight: 20 }}
+                    >
+                        <View style={{ flex: 1 }}>
+                            <ProfileSummary data={data} />
+                            {data.review.data.length > 0 && (
+                                <View>
+                                    <ProfileReviews 
+                                        data={data.review.data} 
+                                        navigation={this.props.navigation}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                    </ScrollView>  
+                )}
             </View>
         );
     }
@@ -39,10 +131,23 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 44,
+        paddingTop: 59,
         marginLeft: -15
     },
-    containerStyle: {
-        
+    headingContainer: {
+        paddingTop: 15,
+        paddingBottom: 15,
+        borderTopWidth: 0.25,
+        borderTopColor: 'rgb(189,195,199)'  
+    },
+    headingText: {
+        fontFamily: 'roboto-medium',
+        fontSize: 20
     }
 });
+
+const mapStateToProps = ({ admin }) => ({
+    id: admin.id
+});
+
+export default connect(mapStateToProps)(ProfileScreen);

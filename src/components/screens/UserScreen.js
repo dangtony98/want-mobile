@@ -35,6 +35,6 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingTop: 44
+        paddingTop: 59
     }
 });

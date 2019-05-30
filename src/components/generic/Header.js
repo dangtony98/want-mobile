@@ -17,10 +17,10 @@ export default ({ title, children }) => {
 
 const styles = StyleSheet.create({
     containerStyle: {
-        paddingTop: 90,
+        paddingTop: 108,
         paddingLeft: 25,
         paddingRight: 25,
-        paddingBottom: 20,
+        paddingBottom: 20
     },
     textStyle: {
         fontSize: 30,

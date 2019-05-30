@@ -14,7 +14,6 @@ export default class Want extends Component {
             verticalContainerStyle, 
             imageStyle,
             titleStyle,
-            costStyle,
             textStyle
         } = styles;
         return (
@@ -38,14 +37,22 @@ export default class Want extends Component {
                                     marginLeft: 15 
                                 }]}
                             >
-                                <Text style={textStyle}>{user.first_name}</Text>
+                                <Text 
+                                    style={[textStyle, { 
+                                        fontFamily: 'roboto-medium', 
+                                        color: 'rgb(0, 0, 0)' 
+                                    }]}
+                                >
+                                    {user.first_name}
+                                </Text>
                                 <Text style={textStyle}>{`${moment(created_at).fromNow(true)} ago`}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
                     <Text 
-                        style={[costStyle, { 
-                            marginTop: 10 
+                        style={[textStyle, {
+                            fontFamily: 'roboto-bold',
+                            color: 'rgb(46,204,113)'
                         }]}
                     >
                         {cost == 0 ? 'FREE' : numeral(cost / 100).format('$0,0.00')}
@@ -53,7 +60,7 @@ export default class Want extends Component {
                 </View>
                 <View style={{ marginTop: 10 }}>
                     <TouchableOpacity 
-                        onPress={() => this.props.navigation.navigate('Want', { title })}
+                        onPress={() => this.props.navigation.navigate('Want', { title, id })}
                     >
                         <Text style={titleStyle}>
                             {this.props.hit ? (<Highlight attribute="title" hit={this.props.hit} />) : title}
@@ -85,7 +92,7 @@ const styles = StyleSheet.create({
     imageStyle: {
         height: 42, 
         width: 42, 
-        borderRadius: 19,
+        borderRadius: 21,
         shadowColor: 'rgb(0, 0, 0)',
         shadowOffset: { width: 1, height: 1 },
         shadowOpacity: 0.2,
@@ -95,11 +102,6 @@ const styles = StyleSheet.create({
         fontFamily: 'roboto-bold',
         fontSize: 20,
         lineHeight: 25
-    },
-    costStyle: {
-        fontFamily: 'roboto-bold',
-        fontSize: 15,
-        color: 'rgb(46,204,113)'
     },
     textStyle: {
         fontFamily: 'roboto-light',
