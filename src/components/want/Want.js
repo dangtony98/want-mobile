@@ -65,10 +65,10 @@ export default class Want extends Component {
                         <Text style={titleStyle}>
                             {this.props.hit ? (<Highlight attribute="title" hit={this.props.hit} />) : title}
                         </Text>
+                        <Text style={[textStyle, { marginTop: 10 }]}>
+                            {this.props.hit ? (<Highlight attribute="description" hit={this.props.hit} />) : description}
+                        </Text>
                     </TouchableOpacity>
-                    <Text style={[textStyle, { marginTop: 10 }]}>
-                        {this.props.hit ? (<Highlight attribute="description" hit={this.props.hit} />) : description}
-                    </Text>
                 </View>
             </View>
         )
@@ -78,9 +78,7 @@ export default class Want extends Component {
 const styles = StyleSheet.create({
     containerStyle: {
         paddingTop: 20,
-        paddingBottom: 20,
-        borderBottomWidth: 0.25,
-        borderBottomColor: 'rgb(189,195,199)'
+        paddingBottom: 20
     },
     rowContainerStyle: {
         flexDirection: 'row'

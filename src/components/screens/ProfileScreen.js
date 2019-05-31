@@ -64,31 +64,17 @@ export class ProfileScreen extends Component {
                             type='clear'
                             onPress={() => this.props.navigation.goBack()}
                         />
-                        <View style={{ flexDirection: 'row' }}>
-                            <Button 
-                                icon={
-                                    <Icon 
-                                        name="message-square" 
-                                        size={30} 
-                                        color="rgb(189,195,199)" 
-                                    />
-                                }
-                                type='clear'
-                                onPress={() => this.onCreateConvo()}
-                            />
-                            <Button 
-                                icon={
-                                    <Icon 
-                                        name="plus" 
-                                        size={30} 
-                                        color="rgb(189,195,199)" 
-                                    />
-                                }
-                                type='clear'
-                                onPress={() => this.props.navigation.goBack()}
-                                style={{ marginLeft: 10 }}
-                            />
-                        </View>
+                        <Button 
+                            icon={
+                                <Icon 
+                                    name="plus" 
+                                    size={30} 
+                                    color="rgb(189,195,199)" 
+                                />
+                            }
+                            type='clear'
+                            onPress={() => this.props.navigation.goBack()}
+                        />
                     </View>
                 </Header>
                 {(loading && data == null) ? (

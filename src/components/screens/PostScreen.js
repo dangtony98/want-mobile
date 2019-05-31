@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, Text, Modal, TouchableOpacity, Picker, Alert, UIManager, LayoutAnimation, Dimensions, KeyboardAvoidingView, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, Picker, Alert, UIManager, LayoutAnimation, Dimensions, KeyboardAvoidingView, Keyboard, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Input from '../generic/Input';
 import Button from '../generic/Button';
@@ -77,7 +77,6 @@ export class PostScreen extends Component {
     }
 
     onFormSubmit = () => {
-        this.onModalClose();
         const { title, cost, description, category } = this.state.chosen;
         if (title != '' && cost != '' && description != '' && category != null) {
             post({
@@ -85,6 +84,7 @@ export class PostScreen extends Component {
                     cost: numeral(numeral(`$${this.state.chosen.cost}`).format('$0,0.00'))._value * 100,
                     category: this.state.chosen.category.value
                 }, () => {
+                    this.onModalClose();
                     getFeed((response) => {
                         this.props.updateFeed(response.data);
                     });
@@ -93,6 +93,7 @@ export class PostScreen extends Component {
     }
 
     onModalClose = () => {
+        Keyboard.dismiss();
         this.setState({
             ...this.state,
             modalVisible: false

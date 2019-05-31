@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, Text, TouchableOpacity, FlatList, Keyboard, UIManager, LayoutAnimation, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Modal, Keyboard, UIManager, LayoutAnimation, ActivityIndicator, StyleSheet } from 'react-native';
 import { InstantSearch } from 'react-instantsearch-native';
 import Input from '../generic/Input';
 import ConnectedSearch from '../filter/ConnectedSearch';
@@ -10,7 +10,6 @@ import { getFeed, handleLoadWants } from '../../services/api/feed';
 import { getUser } from '../../services/api/admin';
 import { updateFeed, addWants, setNextPageUrl } from '../../actions/feed';
 import { setUser } from '../../actions/admin';
-import { registerForPushNotificationsAsync } from '../../services/api/notifications';
 
 export class HomeScreen extends Component {
     constructor(props) {
@@ -18,6 +17,7 @@ export class HomeScreen extends Component {
 
         this.state = {
             loading: true,
+            modalVisible: false,
             searchTerm: '',
             isRefreshing: false,
             inputFocus: false
@@ -25,7 +25,13 @@ export class HomeScreen extends Component {
     }
 
     componentDidMount() {
+        Keyboard.dismiss();
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
+
+        this.subs = [
+            this.props.navigation.addListener('didFocus', (payload) => this.componentDidFocus(payload)),
+        ]; 
+
         getUser((response) => {
             this.props.setUser(response.data.user);
             getFeed((response) => {
@@ -35,10 +41,17 @@ export class HomeScreen extends Component {
                     ...this.state,
                     loading: false
                 });
-                registerForPushNotificationsAsync();
             });
         });    
     } 
+
+    componentWillUnmount() {
+        this.subs.forEach(sub => sub.remove());
+    }
+
+    componentDidFocus = () => {
+        Keyboard.dismiss();
+    }
 
     handleLoadWants = async () => {
         const { next_page_url } = this.props;
@@ -70,15 +83,24 @@ export class HomeScreen extends Component {
     handleInputFocus = (focus) => {
         if (!focus) Keyboard.dismiss();
 
-        this.setState({
+        this.setState((prevState) => ({
             ...this.state,
+            searchTerm: focus == false ? '' : prevState.searchTerm,
             inputFocus: focus
-        });
+        }));
+        
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     }
 
     render() {
-        const { screenStyle, headerStyle, contentStyle, cancelButtonStyle, textStyle } = styles;
+        const { 
+            screenStyle, 
+            headerStyle, 
+            contentStyle,
+            wantContainerStyle, 
+            cancelButtonStyle, 
+            textStyle 
+        } = styles;
         const { loading, searchTerm, isRefreshing, inputFocus } = this.state;
         const { wants } = this.props;
         return (
@@ -125,11 +147,14 @@ export class HomeScreen extends Component {
                                 onEndReachedThreshold={0.1}
                                 refreshing={isRefreshing}
                                 onRefresh={() => this.onRefresh()}
-                                renderItem={({ item }) => (
-                                    <Want 
-                                        {...item} 
-                                        navigation={this.props.navigation}
-                                    />
+                                renderItem={({ item, index }) => (
+                                    <View style={index < wants.length - 1 && wantContainerStyle}>
+                                        <Want 
+                                            {...item} 
+                                            navigation={this.props.navigation}
+                                        />
+                                    </View>
+                                    
                                 )}
                                 style={{ flex: 1 }}
                             />
@@ -189,6 +214,10 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingLeft: 20,
         paddingRight: 20,
+    },
+    wantContainerStyle: {
+        borderBottomWidth: 0.25,
+        borderBottomColor: 'rgb(189,195,199)'
     },
     cancelButtonStyle: { 
         alignSelf: 'center', 

@@ -9,8 +9,8 @@ import Header from '../generic/Header';
 import SendInput from '../generic/SendInput';
 import WantComments from '../want/WantComments';
 import { getWant, commentWant } from '../../services/api/want';
+import { createConvo } from '../../services/api/inbox';
 import { IMAGE_URL } from '../../services/variables/variables';
-
 
 export class WantScreen extends Component {
     constructor(props) {
@@ -34,6 +34,18 @@ export class WantScreen extends Component {
         });
     }
 
+    onCreateConvo = () => {
+        const { want } = this.state;
+        const { admin } = this.props;
+        createConvo({
+            wanter_id: admin.id,
+            fulfiller_id: want.user.id,
+            want_id: want.id
+        }, () => {
+            this.props.navigation.navigate('Inbox');
+        });
+    }
+
     onPostComment = () => {
         const { commentInput, want} = this.state;
         const { admin } = this.props;
@@ -51,7 +63,7 @@ export class WantScreen extends Component {
                     replies: []
                 }]
             }));
-            this.refs.scrollView.scrollTo(0);
+            this.refs.scrollView.scrollTo({ x: 0, y: 0, animated: true });
         });
     }
 
@@ -67,8 +79,6 @@ export class WantScreen extends Component {
             textStyle 
         } = styles;
         const { want, comments, commentInput } = this.state;
-        console.log('tet');
-        console.log(this.props.admin);
         return (
             <View style={{ flex: 1 }}>
                 <Header title="">
@@ -84,17 +94,31 @@ export class WantScreen extends Component {
                             type='clear'
                             onPress={() => this.props.navigation.goBack()}
                         />
-                        <Button 
-                            icon={
-                                <Icon 
-                                    name="message-square" 
-                                    size={30} 
-                                    color="rgb(189,195,199)" 
-                                />
-                            }
-                            type='clear'
-                            onPress={() => this.onCreateConvo()}
-                        />
+                        <View style={{ flexDirection: 'row' }}>
+                            <Button 
+                                icon={
+                                    <Icon 
+                                        name="message-square" 
+                                        size={30} 
+                                        color="rgb(189,195,199)" 
+                                    />
+                                }
+                                type='clear'
+                                onPress={() => this.onCreateConvo()}
+                            />
+                            <Button 
+                                icon={
+                                    <Icon 
+                                        name="bookmark" 
+                                        size={30} 
+                                        color="rgb(189,195,199)" 
+                                    />
+                                }
+                                type='clear'
+                                onPress={() => this.onCreateConvo()}
+                                style={{ marginLeft: 10 }}
+                            />
+                        </View>
                     </View>
                 </Header>
                 <ScrollView

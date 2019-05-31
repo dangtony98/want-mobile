@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { ScreenOrientation, Font } from 'expo';
+import Expo, { Notifications, ScreenOrientation, Font } from 'expo';
 import { YellowBox } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -16,6 +16,7 @@ import PostScreen from './src/components/screens/PostScreen';
 import UserScreen from './src/components/screens/UserScreen';
 import SettingsScreen from './src/components/screens/SettingsScreen';
 import Icon from 'react-native-vector-icons/Feather';
+import { registerForPushNotificationsAsync } from './src/services/api/notifications';
 
 YellowBox.ignoreWarnings(['Remote debugger']);
 
@@ -24,12 +25,17 @@ export default class App extends Component {
     super(props);
 
     this.state = {
-      fontLoaded: false
+      fontLoaded: false,
+      notification: {}
     }
   }
 
   async componentDidMount() {
     ScreenOrientation.allowAsync(ScreenOrientation.Orientation.PORTRAIT_UP);
+    
+    registerForPushNotificationsAsync();
+    this._notificationSubscription = Notifications.addListener(this._handleNotification);
+    
     await Font.loadAsync({
       'roboto-light': require('./src/assets/fonts/Roboto-Light.ttf'),
       'roboto-medium': require('./src/assets/fonts/Roboto-Medium.ttf'),
@@ -38,6 +44,14 @@ export default class App extends Component {
 
     this.setState({ ...this.state, fontLoaded: true });
   }
+
+  componentWillUnmount() {
+    this._notificationSubscription && Expo.Notifications.removeListener(this._handleNotification);
+  }
+
+  _handleNotification = (notification) => {
+    this.setState({ ...this.state, notification: notification });
+  };
 
   render() {
     const { fontLoaded } = this.state;
