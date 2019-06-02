@@ -20,7 +20,9 @@ export class HomeScreen extends Component {
             modalVisible: false,
             searchTerm: '',
             isRefreshing: false,
-            inputFocus: false
+            inputFocus: false,
+            scrollOffset: 0,
+            scrollDirectionIsUp: true
         }
     }
 
@@ -51,6 +53,27 @@ export class HomeScreen extends Component {
 
     componentDidFocus = () => {
         Keyboard.dismiss();
+    }
+
+    onScroll = (event) => {
+        const { scrollOffset } = this.state;
+        const currentOffset = event.nativeEvent.contentOffset.y;
+
+        if (currentOffset > 0) {
+            if (currentOffset > scrollOffset) {
+                this.setState({ ...this.state, 
+                    scrollOffset: currentOffset,
+                    scrollDirectionIsUp: false 
+                });
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            } else {
+                this.setState({ ...this.state, 
+                    scrollOffset: currentOffset,
+                    scrollDirectionIsUp: true 
+                });
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            }
+        }
     }
 
     handleLoadWants = async () => {
@@ -101,27 +124,34 @@ export class HomeScreen extends Component {
             cancelButtonStyle, 
             textStyle 
         } = styles;
-        const { loading, searchTerm, isRefreshing, inputFocus } = this.state;
+        const { loading, searchTerm, isRefreshing, inputFocus, scrollDirectionIsUp } = this.state;
         const { wants } = this.props;
         return (
             <View style={screenStyle}>
                 <View style={headerStyle}>
-                    <Input
-                        type="solid" 
-                        value={searchTerm}
-                        placeholder='Try "homework"'
-                        onFocus={() => this.handleInputFocus(true)}
-                        onBlur={() => this.handleInputFocus(false)}
-                        onChangeText={(text) => this.setState({ ...this.state, searchTerm: text})}
-                    />
-                    {inputFocus && (
-                        <TouchableOpacity 
-                            style={cancelButtonStyle}
-                            onPress={() => this.handleInputFocus(false)}
-                        >
-                            <Text style={textStyle}>Cancel</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Input
+                            type="solid" 
+                            value={searchTerm}
+                            placeholder='Try "homework"'
+                            onFocus={() => this.handleInputFocus(true)}
+                            onBlur={() => this.handleInputFocus(false)}
+                            onChangeText={(text) => this.setState({ ...this.state, searchTerm: text})}
+                        />
+                        {inputFocus && (
+                            <TouchableOpacity 
+                                style={cancelButtonStyle}
+                                onPress={() => this.handleInputFocus(false)}
+                            >
+                                <Text style={textStyle}>Cancel</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    {/* {scrollDirectionIsUp && (
+                        <TouchableOpacity>
+                            <Text>Test</Text>
                         </TouchableOpacity>
-                    )}
+                    )} */}
                 </View>
                 {searchTerm == '' && wants ? (
                     <View style={contentStyle}>
@@ -147,6 +177,7 @@ export class HomeScreen extends Component {
                                 onEndReachedThreshold={0.1}
                                 refreshing={isRefreshing}
                                 onRefresh={() => this.onRefresh()}
+                                onScroll={this.onScroll}
                                 renderItem={({ item, index }) => (
                                     <View style={index < wants.length - 1 && wantContainerStyle}>
                                         <Want 
@@ -197,8 +228,6 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start'
     },
     headerStyle: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         paddingTop: 60, 
         paddingBottom: 20,
         paddingLeft: 10,

@@ -15,24 +15,24 @@ export class LoginScreen extends Component {
             inputFocus: false,
             email: '',
             password: '',
-            isLoggedIn: false
+            isLoggedIn: null
         }
     }
 
     async componentDidMount() {
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
-        // await AsyncStorage.getItem('token').then((token) => {
-        //     if (token) {
-        //         this.setState({
-        //             ...this.state,
-        //             isLoggedIn: true
-        //         }, () => {
-        //             this.props.navigation.navigate('Main');
-        //         })
-        //     } else {
-        //         this.setState({ ...this.state, isLoggedIn: false });
-        //     }
-        // });
+        await AsyncStorage.getItem('token').then((token) => {
+            if (token) {
+                this.setState({
+                    ...this.state,
+                    isLoggedIn: true
+                }, () => {
+                    this.props.navigation.navigate('Main');
+                })
+            } else {
+                this.setState({ ...this.state, isLoggedIn: false });
+            }
+        });
     }
 
     onButtonPressed = () => {

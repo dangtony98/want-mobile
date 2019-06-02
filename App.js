@@ -18,6 +18,9 @@ import SettingsScreen from './src/components/screens/SettingsScreen';
 import Icon from 'react-native-vector-icons/Feather';
 import { registerForPushNotificationsAsync } from './src/services/api/notifications';
 
+// import * as firebase from 'firebase';
+// import '@firebase/messaging';
+
 YellowBox.ignoreWarnings(['Remote debugger']);
 
 export default class App extends Component {
@@ -36,6 +39,18 @@ export default class App extends Component {
     registerForPushNotificationsAsync();
     this._notificationSubscription = Notifications.addListener(this._handleNotification);
     
+    // firebase.initializeApp();
+    // const fcmToken = await firebase.messaging().getToken();
+    // if (fcmToken) {
+    //     // user has a device token
+    //     console.log('A');
+    //     console.log(fcmToken);
+    // } else {
+    //     // user doesn't have a device token yet
+    //     console.log('B');
+    //     console.log(fcmToken);
+    // }
+
     await Font.loadAsync({
       'roboto-light': require('./src/assets/fonts/Roboto-Light.ttf'),
       'roboto-medium': require('./src/assets/fonts/Roboto-Medium.ttf'),
