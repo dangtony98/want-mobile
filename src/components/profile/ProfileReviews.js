@@ -6,8 +6,6 @@ import uuid from 'uuid';
 import { IMAGE_URL } from '../../services/variables/variables';
 
 export default ({ data, navigation }) => {
-    console.log(navigation);
-    console.log(data);
     const {
         listStyle,
         containerStyle,

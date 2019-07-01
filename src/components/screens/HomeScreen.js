@@ -6,8 +6,10 @@ import Input from '../generic/Input';
 import ConnectedSearch from '../filter/ConnectedSearch';
 import ConnectedHits from '../filter/ConnectedHits';
 import Want from '../want/Want';
+import FiltersModal from '../modals/FiltersModal';
 import { getFeed, handleLoadWants } from '../../services/api/feed';
 import { getUser } from '../../services/api/admin';
+import { applyFilters } from '../../services/api/filter';
 import { updateFeed, addWants, setNextPageUrl } from '../../actions/feed';
 import { setUser } from '../../actions/admin';
 
@@ -20,13 +22,14 @@ export class HomeScreen extends Component {
             modalVisible: false,
             searchTerm: '',
             isRefreshing: false,
-            inputFocus: false,
-            scrollOffset: 0,
-            scrollDirectionIsUp: true
+            inputFocus: false
         }
     }
 
     componentDidMount() {
+        console.log('HomeScreen componentDidMount()');
+        const { category, sort_by } = this.props;
+
         Keyboard.dismiss();
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
 
@@ -36,13 +39,20 @@ export class HomeScreen extends Component {
 
         getUser((response) => {
             this.props.setUser(response.data.user);
-            getFeed((response) => {
+            // getFeed((response) => {
+            //     this.props.updateFeed(response.data);
+            //     this.setState({
+            //         ...this.state,
+            //         loading: false
+            //     });
+            // });
+
+            applyFilters({
+                categories: [category.value == 0 ? '' : [category.value]],
+                sort_by: sort_by.value
+            }, (response) => {
                 this.props.updateFeed(response.data);
-                console.log(response.data);
-                this.setState({
-                    ...this.state,
-                    loading: false
-                });
+                this.setState({ ...this.state, loading: false });
             });
         });    
     } 
@@ -53,27 +63,6 @@ export class HomeScreen extends Component {
 
     componentDidFocus = () => {
         Keyboard.dismiss();
-    }
-
-    onScroll = (event) => {
-        const { scrollOffset } = this.state;
-        const currentOffset = event.nativeEvent.contentOffset.y;
-
-        if (currentOffset > 0) {
-            if (currentOffset > scrollOffset) {
-                this.setState({ ...this.state, 
-                    scrollOffset: currentOffset,
-                    scrollDirectionIsUp: false 
-                });
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            } else {
-                this.setState({ ...this.state, 
-                    scrollOffset: currentOffset,
-                    scrollDirectionIsUp: true 
-                });
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            }
-        }
     }
 
     handleLoadWants = async () => {
@@ -92,11 +81,15 @@ export class HomeScreen extends Component {
     }
 
     onRefresh = () => {
+        const { category, sort_by } = this.props;
         this.setState({
             ...this.state,
             isRefreshing: true
         }, () => {
-            getFeed((response) => {
+            applyFilters({
+                categories: [category.value == 0 ? '' : [category.value]],
+                sort_by: sort_by.value
+            }, (response) => {
                 this.props.updateFeed(response.data);
                 this.setState({ ...this.state, isRefreshing: false });
             });
@@ -108,7 +101,7 @@ export class HomeScreen extends Component {
 
         this.setState((prevState) => ({
             ...this.state,
-            searchTerm: focus == false ? '' : prevState.searchTerm,
+            searchTerm: !focus ? '' : prevState.searchTerm,
             inputFocus: focus
         }));
         
@@ -121,13 +114,35 @@ export class HomeScreen extends Component {
             headerStyle, 
             contentStyle,
             wantContainerStyle, 
-            cancelButtonStyle, 
-            textStyle 
+            cancelButtonStyle,
+            filtersRowStyle,
+            filtersButtonStyle, 
+            filtersButtonTextStyle,
+            filtersTabStyle,
+            filtersTabTextStyle,
+            textStyle
         } = styles;
-        const { loading, searchTerm, isRefreshing, inputFocus, scrollDirectionIsUp } = this.state;
-        const { wants } = this.props;
+        const { 
+            loading, 
+            modalVisible, 
+            searchTerm, 
+            isRefreshing, 
+            inputFocus
+        } = this.state;
+        const { wants, category, sort_by } = this.props;
+        
         return (
             <View style={screenStyle}>
+                <Modal 
+                    animationType="slide"
+                    transparent={false}
+                    visible={modalVisible}
+                >
+                    <FiltersModal 
+                        leftButtonPressed={() => this.setState({ ...this.state, modalVisible: false })}
+                        rightButtonPressed={() => this.setState({ ...this.state, modalVisible: false })}
+                    />
+                </Modal>
                 <View style={headerStyle}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Input
@@ -147,11 +162,35 @@ export class HomeScreen extends Component {
                             </TouchableOpacity>
                         )}
                     </View>
-                    {/* {scrollDirectionIsUp && (
-                        <TouchableOpacity>
-                            <Text>Test</Text>
+                    <View style={filtersRowStyle}>
+                        <TouchableOpacity 
+                            style={filtersButtonStyle}
+                            onPress={() => this.setState({ 
+                                ...this.state, 
+                                modalVisible: true 
+                            })}
+                        >
+                            <Text style={filtersButtonTextStyle}>Filters</Text>
                         </TouchableOpacity>
-                    )} */}
+                        {category.value != 0 && (
+                            <View 
+                                style={[filtersTabStyle, { marginLeft: 10 }]}
+                            >
+                                <Text style={filtersTabTextStyle}>
+                                    {category.label}
+                                </Text>
+                            </View>
+                        )}
+                        {sort_by.value != "" && (
+                            <View 
+                                style={[filtersTabStyle, { marginLeft: 10 }]}
+                            >
+                                <Text style={filtersTabTextStyle}>
+                                    {sort_by.label}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
                 {searchTerm == '' && wants ? (
                     <View style={contentStyle}>
@@ -208,28 +247,16 @@ export class HomeScreen extends Component {
     }
 }
 
-const mapStateToProps = ({ feed }) => ({
-    wants: feed.wants,
-    next_page_url: feed.next_page_url
-});
-
-const mapDispatchToProps = (dispatch) => ({
-    setUser: (user) => dispatch(setUser(user)),
-    updateFeed: (feed) => dispatch(updateFeed(feed)),
-    addWants: (wants) => dispatch(addWants(wants)),
-    setNextPageUrl: (url) => dispatch(setNextPageUrl(url))
-});
-
-export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
-
 const styles = StyleSheet.create({
     screenStyle: {
         flex: 1,
         justifyContent: 'flex-start'
     },
     headerStyle: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
         paddingTop: 60, 
-        paddingBottom: 20,
+        paddingBottom: 10,
         paddingLeft: 10,
         paddingRight: 10, 
         shadowColor: 'rgb(0, 0, 0)',
@@ -253,6 +280,53 @@ const styles = StyleSheet.create({
         paddingLeft: 7, 
         paddingRight: 12 
     },
+    filtersRowStyle: {
+        flexDirection: 'row',
+        paddingLeft: 10, 
+        marginTop: 10
+    },
+    filtersButtonStyle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: 15,
+        paddingRight: 15,
+        paddingTop: 10,
+        paddingBottom: 10,
+        borderRadius: 5,
+        borderColor: 'rgb(88, 42, 114)',
+        shadowColor: 'rgb(88, 42, 114)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,  
+        elevation: 1,
+        backgroundColor: 'rgb(255, 255, 255)'
+    },
+    filtersButtonTextStyle: {
+        fontFamily: 'roboto-medium',
+        lineHeight: 20,
+        fontSize: 12, 
+        color: 'rgb(88, 42, 114)'
+    },
+    filtersTabStyle: {
+        paddingLeft: 15,
+        paddingRight: 15,
+        paddingTop: 10,
+        paddingBottom: 10,
+        borderRadius: 5,
+        borderColor: 'rgb(88, 42, 114)',
+        shadowColor: 'rgb(88, 42, 114)',
+        shadowOffset: { width: 1, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,  
+        elevation: 1,
+        backgroundColor: 'rgb(151, 117, 170)'
+    },
+    filtersTabTextStyle: {
+        fontFamily: 'roboto-medium',
+        lineHeight: 20,
+        fontSize: 12, 
+        color: 'rgb(255, 255, 255)'
+    },
     textStyle: {
         fontFamily: 'roboto-medium',
         fontSize: 15,
@@ -260,3 +334,19 @@ const styles = StyleSheet.create({
         lineHeight: 20
     }
 });
+
+const mapStateToProps = ({ feed, filters }) => ({
+    wants: feed.wants,
+    next_page_url: feed.next_page_url,
+    category: filters.category,
+    sort_by: filters.sort_by
+});
+
+const mapDispatchToProps = (dispatch) => ({
+    setUser: (user) => dispatch(setUser(user)),
+    updateFeed: (feed) => dispatch(updateFeed(feed)),
+    addWants: (wants) => dispatch(addWants(wants)),
+    setNextPageUrl: (url) => dispatch(setNextPageUrl(url))
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

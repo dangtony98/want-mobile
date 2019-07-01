@@ -122,7 +122,7 @@ export class WantScreen extends Component {
                     </View>
                 </Header>
                 <ScrollView
-                    showsVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={true}
                     ref="scrollView"
                 >
                     <View style={containerStyle}>

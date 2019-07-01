@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, Text, Modal, TouchableOpacity, Picker, Alert, UIManager, LayoutAnimation, Dimensions, KeyboardAvoidingView, Keyboard, StyleSheet } from 'react-native';
+import { View, Text, Modal, ScrollView, TouchableOpacity, Picker, Alert, UIManager, LayoutAnimation, Dimensions, KeyboardAvoidingView, Keyboard, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Input from '../generic/Input';
 import Button from '../generic/Button';
 import numeral from 'numeral';
-import { getFeed } from '../../services/api/feed';
 import { updateFeed } from '../../actions/feed';
-import { getCategories } from '../../services/api/filter';
+import { setCategories, setFilters } from '../../actions/filters';
+import { getFeed } from '../../services/api/feed';
+import { getCategories, applyFilters } from '../../services/api/filter';
 import { post } from '../../services/api/post';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -35,19 +36,39 @@ export class PostScreen extends Component {
         }
     }
 
-    componentDidMount() {
+    async componentDidMount() {
+        console.log(applyFilters);
         UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
         let selectOptions = [];
 
         this.subs = [
             this.props.navigation.addListener('didFocus', (payload) => this.componentDidFocus(payload)),
-        ]; 
+        ];
 
-        getCategories((categories) => {
+        const { categories } = this.props;
+
+        if (categories) {
             categories.forEach((category) => {
                 const option = { value: category.id, label: category.name };
                 selectOptions.push(option);
             });
+            this.setState({
+                ...this.state,
+                options: selectOptions,
+                chosen: {
+                    ...this.state.chosen,
+                    category: selectOptions[0]
+                }
+            });
+        }
+
+        getCategories((categories) => {
+            selectOptions = [];
+            categories.forEach((category) => {
+                const option = { value: category.id, label: category.name };
+                selectOptions.push(option);
+            });
+            this.props.setCategories(categories);
             this.setState({
                 ...this.state,
                 options: selectOptions,
@@ -84,23 +105,41 @@ export class PostScreen extends Component {
                     cost: numeral(numeral(`$${this.state.chosen.cost}`).format('$0,0.00'))._value * 100,
                     category: this.state.chosen.category.value
                 }, () => {
-                    this.onModalClose();
-                    getFeed((response) => {
+                    applyFilters({
+                        categories: [0],
+                        sort_by: 'created_at#desc'
+                    }, (response) => {
+                        console.log('BBB');
+                        // SET FILTERS
+                        this.props.setFilters({
+                            category: { value: 0, label: 'None' },
+                            sort_by: { value: 'created_at#desc', label: 'Newest' },
+                        })
                         this.props.updateFeed(response.data);
+                        this.onModalClose();
                     });
                 });
         }
     }
 
     onModalClose = () => {
+        const { category, sort_by } = this.props;
+
         Keyboard.dismiss();
         this.setState({
             ...this.state,
             modalVisible: false
         }, () => {
-            this.props.navigation.navigate('Home');
-            getFeed((response) => {
+            // getFeed((response) => {
+            //     this.props.updateFeed(response.data);
+            // });
+            applyFilters({
+                categories: [category.value == 0 ? '' : [category.value]],
+                sort_by: sort_by.value
+            }, (response) => {
                 this.props.updateFeed(response.data);
+                this.props.navigation.navigate('Home');
+                // this.setState({ ...this.state, loading: false });
             });
         });
     }
@@ -120,7 +159,7 @@ export class PostScreen extends Component {
                 ...this.state.chosen,
                 cost: text
             }
-        })
+        });
     }
 
     handlePickerAnimation = () => {
@@ -142,118 +181,110 @@ export class PostScreen extends Component {
         } = styles;
         return (
             <View style={{ flex: 1 }}>
-             <Modal
-                animationType="slide"
-                transparent={false}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    Alert.alert('Modal has been closed.');
-                }}
-            >
-                <View style={{ flex: 1 }}>
-                        <KeyboardAvoidingView
-                            behavior="padding"
-                            keyboardVerticalOffset={0}
-                            enabled
-                            style={{ flex: 1 }}
-                        >
-                            <View style={headerStyle}>
-                                <Button 
-                                    title="Cancel"
-                                    type="clear"
-                                    onPress={() => this.onModalClose()}
-                                />
-                                <Button 
-                                    title="Post"
-                                    type="clear"
-                                    onPress={() => this.onFormSubmit()}
-                                />
-                            </View>
-                            {(options.length != 0 && category) && (
-                                <View style={contentStyle}>
-                                    <View style={{ height: pickerVisible ? 446 : 240 }}>
-                                        <Input
-                                            type="clear" 
-                                            value={title}
-                                            placeholder='Title'
-                                            onChangeText={(text) => this.setState({ 
-                                                ...this.state,
-                                                chosen: {
-                                                    ...this.state.chosen,
-                                                    title: text
-                                                }
-                                            })}
-                                            onFocus={() => this.onInputFocus()}
-                                        />
-                                        <TouchableOpacity 
-                                            onPress={() => this.handlePickerAnimation()}
-                                            style={selectStyle}
+                <Modal
+                    animationType="slide"
+                    transparent={false}
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                        Alert.alert('Modal has been closed.');
+                    }}
+                >
+                    <ScrollView style={{ flex: 1 }}>
+                        <View style={headerStyle}>
+                            <Button 
+                                title="Cancel"
+                                type="clear"
+                                onPress={() => this.onModalClose()}
+                            />
+                            <Button 
+                                title="Post"
+                                type="clear"
+                                onPress={() => this.onFormSubmit()}
+                            />
+                        </View>
+                        {(options.length != 0 && category) && (
+                            <View style={contentStyle}>
+                                <View style={{ height: pickerVisible ? 446 : 240 }}>
+                                    <Input
+                                        type="clear" 
+                                        value={title}
+                                        placeholder='Title'
+                                        onChangeText={(text) => this.setState({ 
+                                            ...this.state,
+                                            chosen: {
+                                                ...this.state.chosen,
+                                                title: text
+                                            }
+                                        })}
+                                        onFocus={() => this.onInputFocus()}
+                                    />
+                                    <TouchableOpacity 
+                                        onPress={() => this.handlePickerAnimation()}
+                                        style={selectStyle}
+                                    >
+                                        <Text style={textStyle}>
+                                            Category
+                                        </Text>
+                                        <Text style={textStyle}>
+                                            {options[category.value - 1].label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    {pickerVisible && (
+                                        <Picker
+                                            selectedValue={category.value}
+                                            style={{ height: 216, width: SCREEN_WIDTH - 40, marginBottom: 10 }}
+                                            onValueChange={(itemValue, itemIndex) => {
+                                                this.setState({
+                                                    ...this.state,
+                                                    chosen: {
+                                                        ...this.state.chosen,
+                                                        category: { label: options[itemValue - 1].label, value: itemIndex + 1 } 
+                                                    }
+                                                });
+                                            }}
                                         >
-                                            <Text style={textStyle}>
-                                                Category
-                                            </Text>
-                                            <Text style={textStyle}>
-                                                {options[category.value - 1].label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                        {pickerVisible && (
-                                            <Picker
-                                                selectedValue={category.value}
-                                                style={{ height: 216, width: SCREEN_WIDTH - 40, marginBottom: 10 }}
-                                                onValueChange={(itemValue, itemIndex) => {
-                                                    this.setState({
-                                                        ...this.state,
-                                                        chosen: {
-                                                            ...this.state.chosen,
-                                                            category: { label: options[itemValue - 1].label, value: itemIndex + 1 } 
-                                                        }
-                                                    });
-                                                }}
-                                            >
-                                                {options.map((option) => {
-                                                    return (
-                                                        <Picker.Item 
-                                                            label={option.label} 
-                                                            value={option.value} 
-                                                            key={option.value}
-                                                        />
-                                                    );
-                                                })}
-                                            </Picker>
-                                        )}       
-                                        <Input
-                                            type="clear" 
-                                            value={cost}
-                                            placeholder='Pay amount (e.g. $5.00)'
-                                            onChangeText={(text) => this.onChangeNumber(text)}
-                                            onFocus={() => this.onInputFocus()}
-                                            keyboardType="numeric"
-                                        />
-                                        <Input
-                                            type="clear" 
-                                            value={description}
-                                            placeholder='Description'
-                                            onChangeText={(text) => this.setState({ 
-                                                ...this.state, 
-                                                chosen: {
-                                                    ...this.state.chosen,
-                                                    description: text
-                                                }
+                                            {options.map((option) => {
+                                                return (
+                                                    <Picker.Item 
+                                                        label={option.label} 
+                                                        value={option.value} 
+                                                        key={option.value}
+                                                    />
+                                                );
                                             })}
-                                            onFocus={() => this.onInputFocus()}
-                                            multiline={true}
-                                            numberOfLines={5}
-                                            style={{ marginBottom: 10 }}
-                                            textArea={true}
-                                        />
-                                        
-                                    </View>  
-                                    <View style={{ flex: 1 }} />  
-                                </View>
-                            )}       
-                        </KeyboardAvoidingView>
-                </View>
-            </Modal>
+                                        </Picker>
+                                    )}       
+                                    <Input
+                                        type="clear" 
+                                        value={cost}
+                                        placeholder='$0'
+                                        onChangeText={(text) => this.onChangeNumber(text)}
+                                        onFocus={() => this.onInputFocus()}
+                                        keyboardType="numeric"
+                                    />
+                                    <Input
+                                        type="textarea" 
+                                        value={description}
+                                        placeholder='Description'
+                                        onChangeText={(text) => this.setState({ 
+                                            ...this.state, 
+                                            chosen: {
+                                                ...this.state.chosen,
+                                                description: text
+                                            }
+                                        })}
+                                        onFocus={() => this.onInputFocus()}
+                                        multiline={true}
+                                        numberOfLines={5}
+                                        style={{ marginBottom: 10 }}
+                                        textArea={true}
+                                    />
+                                </View>  
+                                <View style={{ flex: 1 }} />  
+                            </View>
+                        )}       
+                    </ScrollView>
+                </Modal>
             </View>
         );
     }
@@ -264,8 +295,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingTop: 60,
-        paddingLeft: 20,
-        paddingRight: 20,
+        paddingLeft: 10,
+        paddingRight: 10
     },
     contentStyle: {
         flex: 1,
@@ -282,7 +313,6 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         marginRight: 10,
         marginBottom: 10,
-        paddingLeft: 20,
         paddingTop: 15,
         paddingBottom: 15,
         flexDirection: 'row', 
@@ -296,8 +326,16 @@ const styles = StyleSheet.create({
     }
 });
 
-const mapDispatchToProps = (dispatch) => ({
-    updateFeed: (feed) => dispatch(updateFeed(feed))
+const mapStateToProps = ({ filters }) => ({
+    categories: filters.categories,
+    category: filters.category,
+    sort_by: filters.sort_by
 });
 
-export default connect(null, mapDispatchToProps)(PostScreen);
+const mapDispatchToProps = (dispatch) => ({
+    updateFeed: (feed) => dispatch(updateFeed(feed)),
+    setCategories: (categories) => dispatch(setCategories(categories)),
+    setFilters: (filters) => dispatch(setFilters(filters))
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(PostScreen);

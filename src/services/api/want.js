@@ -47,6 +47,7 @@ const commentWant = async (comment_body, id, callback) => {
         })
         .then((response) => {
             // COMMENT WANT SUCCESSFUL
+            console.log('')
             callback();
         })
         .catch((error) => {

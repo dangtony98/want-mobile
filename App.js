@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import Expo, { Notifications, ScreenOrientation, Font } from 'expo';
+import firebase from 'firebase';
+import '@firebase/messaging';
 import { YellowBox } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { createAppContainer, createBottomTabNavigator, createStackNavigator } from 'react-navigation';
 import { store, persistor } from './src/store/store';
-import LoadingScreen from './src/components/screens/LoadingScreen';
 import LoginScreen from './src/components/screens/LoginScreen';
 import HomeScreen from './src/components/screens/HomeScreen';
 import WantScreen from './src/components/screens/WantScreen';
@@ -17,9 +18,6 @@ import UserScreen from './src/components/screens/UserScreen';
 import SettingsScreen from './src/components/screens/SettingsScreen';
 import Icon from 'react-native-vector-icons/Feather';
 import { registerForPushNotificationsAsync } from './src/services/api/notifications';
-
-// import * as firebase from 'firebase';
-// import '@firebase/messaging';
 
 YellowBox.ignoreWarnings(['Remote debugger']);
 
@@ -39,16 +37,36 @@ export default class App extends Component {
     registerForPushNotificationsAsync();
     this._notificationSubscription = Notifications.addListener(this._handleNotification);
     
-    // firebase.initializeApp();
-    // const fcmToken = await firebase.messaging().getToken();
-    // if (fcmToken) {
-    //     // user has a device token
-    //     console.log('A');
-    //     console.log(fcmToken);
+    // var firebaseConfig = {
+    //   apiKey: "AIzaSyA2RmyR9GZV4_rCVrckYcarSPY-lDc_RTk",
+    //   authDomain: "wantapp-aa469.firebaseapp.com",
+    //   databaseURL: "https://wantapp-aa469.firebaseio.com",
+    //   projectId: "wantapp-aa469",
+    //   storageBucket: "wantapp-aa469.appspot.com",
+    //   messagingSenderId: "483507063189",
+    //   appId: "1:483507063189:web:4e5787290b630a7e"
+    // };
+
+    // firebase.initializeApp(firebaseConfig);
+
+    // const enabled = await firebase.messaging().hasPermission();
+    // if (enabled) {
+    //     // user has permissions
     // } else {
-    //     // user doesn't have a device token yet
-    //     console.log('B');
-    //     console.log(fcmToken);
+    //     // user doesn't have permission
+    //     try {
+    //       await firebase.messaging().requestPermission();
+    //       let fcmToken = await AsyncStorage.getItem('fcmToken');
+    //       if (!fcmToken) {
+    //           fcmToken = await firebase.messaging().getToken();
+    //           if (fcmToken) {
+    //               // user has a device token
+    //               await AsyncStorage.setItem('fcmToken', fcmToken);
+    //           }
+    //       }
+    //     } catch (error) {
+    //       console.log('permission rejected');
+    //     }
     // }
 
     await Font.loadAsync({

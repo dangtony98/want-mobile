@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet, Dimensions } from 'react-native';
 import { IMAGE_URL } from '../../services/variables/variables';
+import moment from 'moment';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -34,6 +35,11 @@ export default ({ data }) => {
                     style={nameStyle}
                 >
                     {data.user[0].first_name}
+                </Text>
+                <Text 
+                    style={[textStyle, { marginTop: 5 }]}
+                >
+                    {`Joined in ${moment(data.user[0].created_at).format('YYYY')}`}
                 </Text>
                 {data.user[0].tag_line && (
                     <Text 

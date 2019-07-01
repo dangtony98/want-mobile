@@ -16,7 +16,7 @@ export default ({ type, value, placeholder, onFocus, onBlur, onChangeText, secur
             onChangeText={(text) => onChangeText(text)}
             onFocus={onFocus}
             onBlur={onBlur}
-            inputStyle={[type == 'solid' ? solidInputStyle : clearInputStyle, (textArea == true) && { height: 200 }]}
+            inputStyle={[type == 'solid' ? solidInputStyle : clearInputStyle, (textArea == true) && { height: 200 }, type == 'textarea' && { borderBottomWidth: 0 }]}
             inputContainerStyle={inputContainerStyle}
             containerStyle={{ flex: 1 }}
             autoCorrect={false}
@@ -50,8 +50,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.25,
         borderBottomColor: 'rgb(189,195,199)',
         backgroundColor: '#fff',
-        paddingLeft: 20,
-        paddingRight: 20,
         paddingTop: 15,
         paddingBottom: 15,
         color: 'rgb(90, 95, 96)',

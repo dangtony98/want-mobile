@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import Pusher from 'pusher-js/react-native';
-import { View, AsyncStorage, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, AsyncStorage, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from 'react-native';
 import { Button } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/Feather';
 import Header from '../generic/Header';
@@ -92,14 +92,16 @@ export class ChatScreen extends Component {
     render() {
         const { 
             headerStyle, 
-            contentStyle
+            headerTextStyle,
+            contentStyle,
+            placeholderView
         } = styles;
         const { loading, convo_id, sender, receiver, messages, chatInput } = this.state;
         return (
             <View style={{ flex: 1 }}>
                 {receiver && (
                     <View style={{ flex: 1 }}>
-                        <Header title={`${receiver.first_name}`}>
+                        <Header>
                             <View style={headerStyle}>
                                 <Button 
                                     icon={
@@ -112,7 +114,8 @@ export class ChatScreen extends Component {
                                     type='clear'
                                     onPress={() => this.props.navigation.goBack()}
                                 />
-                                <View />
+                                <Text style={headerTextStyle}>{receiver.first_name}</Text>
+                                <View style={placeholderView} />
                             </View>
                         </Header>
                         <View style={contentStyle}>
@@ -164,8 +167,17 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
         paddingTop: 59,
-        marginLeft: -15,
+    },
+    headerTextStyle: {
+        fontFamily: 'roboto-medium',
+        fontSize: 17.5,
+        color: 'rgb(0, 0, 0)',
+        lineHeight: 20
+    },
+    placeholderView: {
+        width: 50
     },
     contentStyle: {
         flex: 1,

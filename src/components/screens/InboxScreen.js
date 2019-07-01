@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
 import { View, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
-import { Button } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/Feather';
 import Header from '../generic/Header';
 import InboxPerson from '../inbox/InboxPerson';
 import { getConvos } from '../../services/api/inbox';

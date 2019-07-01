@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch'
     },
     clearButtonStyle: {
-        backgroundColor: 'transparent',
+        backgroundColor: '#fff',
         paddingTop: 15,
         paddingBottom: 15,
         paddingLeft: 20,

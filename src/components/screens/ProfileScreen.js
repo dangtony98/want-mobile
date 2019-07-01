@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
-import { Button } from 'react-native-elements';
+import { View, Text, ScrollView, ActivityIndicator, Modal, Keyboard, StyleSheet } from 'react-native';
+import { Button as RNEButton } from 'react-native-elements';
 import Icon from 'react-native-vector-icons/Feather';
 import Header from '../generic/Header';
+import Button from '../generic/Button';
 import ProfileSummary from '../profile/ProfileSummary';
 import ProfileReviews from '../profile/ProfileReviews';
+import ProfileModal from '../profile/ProfileModal';
 import { getProfile } from '../../services/api/profile';
 import { createConvo } from '../../services/api/inbox';
 
@@ -15,14 +17,15 @@ export class ProfileScreen extends Component {
 
         this.state = {
             loading: true,
-            data: null
+            data: null,
+            modalVisible: false
         }
     }
 
     componentDidMount() {
         const { id } = this.props.navigation.state.params.user;
-        
         getProfile(id, (response) => {
+            console.log(response.data);
             this.setState({
                 ...this.state,
                 loading: false,
@@ -42,18 +45,53 @@ export class ProfileScreen extends Component {
         });
     }
 
+    onModalClose = () => {
+        Keyboard.dismiss();
+        this.setState({
+            ...this.state,
+            modalVisible: false
+        });
+    }
+
     render() {
         const { 
             headerStyle,
-            headingContainer,
-            headingText
+            modalHeaderStyle,
+            modalContentStyle
         } = styles;
-        const { loading, data } = this.state;
+        const { loading, data, modalVisible } = this.state;
+        const { id } = this.props.navigation.state.params.user;
         return (
             <View style={{ flex: 1 }}>
+            <Modal
+                animationType="slide"
+                transparent={false}
+                visible={modalVisible}
+                onRequestClose={() => {
+                    Alert.alert('Modal has been closed.');
+                }}
+            >
+                <ScrollView style={{ flex: 1 }}>
+                    <View style={modalHeaderStyle}>
+                        <Button 
+                            title="Cancel"
+                            type="clear"
+                            onPress={() => this.onModalClose()}
+                        />
+                        <Button 
+                            title="Update"
+                            type="clear"
+                            onPress={() => this.onFormSubmit()}
+                        />
+                    </View>
+                    <View style={modalContentStyle}>
+
+                    </View>
+                </ScrollView>
+            </Modal>
                 <Header title="">
                     <View style={headerStyle}>
-                        <Button 
+                        <RNEButton 
                             icon={
                                 <Icon 
                                     name="chevron-left" 
@@ -64,17 +102,33 @@ export class ProfileScreen extends Component {
                             type='clear'
                             onPress={() => this.props.navigation.goBack()}
                         />
-                        <Button 
-                            icon={
-                                <Icon 
-                                    name="plus" 
-                                    size={30} 
-                                    color="rgb(189,195,199)" 
+                        <View style={{ flexDirection: 'row' }}>
+                            {/* <RNEButton 
+                                icon={
+                                    <Icon 
+                                        name="plus" 
+                                        size={30} 
+                                        color="rgb(189,195,199)" 
+                                    />
+                                }
+                                type='clear'
+                                onPress={() => this.props.navigation.goBack()}
+                            /> */}
+                            {id == this.props.id && (
+                                <RNEButton 
+                                    icon={
+                                        <Icon 
+                                            name="edit" 
+                                            size={27} 
+                                            color="rgb(189,195,199)" 
+                                        />
+                                    }
+                                    type='clear'
+                                    onPress={() => this.setState({ ...this.state, modalVisible: true })}
+                                    style={{ marginLeft: 15 }}
                                 />
-                            }
-                            type='clear'
-                            onPress={() => this.props.navigation.goBack()}
-                        />
+                            )}
+                        </View>
                     </View>
                 </Header>
                 {(loading && data == null) ? (
@@ -120,15 +174,19 @@ const styles = StyleSheet.create({
         paddingTop: 59,
         marginLeft: -15
     },
-    headingContainer: {
-        paddingTop: 15,
-        paddingBottom: 15,
-        borderTopWidth: 0.25,
-        borderTopColor: 'rgb(189,195,199)'  
+    modalHeaderStyle: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingTop: 60,
+        paddingLeft: 20,
+        paddingRight: 20
     },
-    headingText: {
-        fontFamily: 'roboto-medium',
-        fontSize: 20
+    modalContentStyle: {
+        flex: 1,
+        paddingTop: 20,
+        paddingLeft: 20,
+        paddingRight: 20,
+        justifyContent: "flex-end"
     }
 });
 
